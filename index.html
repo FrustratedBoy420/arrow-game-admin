@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arrow Escape - Admin Panel</title>
+  <!-- Google Fonts & FontAwesome -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Background Ambience -->
+  <div class="ambient-glow bg-glow-1"></div>
+  <div class="ambient-glow bg-glow-2"></div>
+
+  <!-- App Shell -->
+  <div class="app-container">
+    
+    <!-- Navbar / Server Credentials Header -->
+    <header class="navbar glass-card">
+      <div class="brand">
+        <i class="fa-solid fa-gamepad brand-icon"></i>
+        <div>
+          <h1>Arrow Escape</h1>
+          <span class="sub-brand">Game Admin Dashboard</span>
+        </div>
+      </div>
+
+      <div class="server-config">
+        <div class="input-group">
+          <label for="server-url"><i class="fa-solid fa-server"></i> Server URL</label>
+          <input type="text" id="server-url" placeholder="e.g. http://localhost:3000">
+        </div>
+        <div class="input-group">
+          <label for="admin-secret"><i class="fa-solid fa-key"></i> Admin Secret</label>
+          <input type="password" id="admin-secret" placeholder="Secret Token">
+        </div>
+        <button id="btn-save-credentials" class="btn btn-primary btn-sm">
+          <i class="fa-solid fa-circle-check"></i> Connect
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      
+      <!-- Left Navigation Bar -->
+      <aside class="sidebar glass-card">
+        <nav class="nav-menu">
+          <button class="nav-item active" data-tab="tab-dashboard">
+            <i class="fa-solid fa-chart-line"></i> Live Multiplayer
+          </button>
+          <button class="nav-item" data-tab="tab-levels">
+            <i class="fa-solid fa-layer-group"></i> Levels Manager
+          </button>
+          <button class="nav-item" data-tab="tab-config">
+            <i class="fa-solid fa-sliders"></i> Music & Icons
+          </button>
+          <button class="nav-item" data-tab="tab-users">
+            <i class="fa-solid fa-users-viewfinder"></i> Users Monitor
+          </button>
+        </nav>
+
+        <div class="server-status-card">
+          <div class="status-indicator online" id="status-indicator"></div>
+          <span id="status-text">Connecting...</span>
+        </div>
+      </aside>
+
+      <!-- Right Tab Panels -->
+      <section class="content-panels">
+        
+        <!-- Tab 1: Live Multiplayer Rooms Dashboard -->
+        <div id="tab-dashboard" class="tab-panel active">
+          <div class="panel-header">
+            <h2>Live Arena Rooms</h2>
+            <p>Monitor active lobbies and real-time player progression.</p>
+          </div>
+
+          <!-- Quick Stats Cards -->
+          <div class="stats-row">
+            <div class="stat-card glass-card">
+              <div class="stat-icon icon-cyan">
+                <i class="fa-solid fa-door-open"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value" id="stat-active-rooms">0</span>
+                <span class="stat-label">Active Rooms</span>
+              </div>
+            </div>
+            <div class="stat-card glass-card">
+              <div class="stat-icon icon-purple">
+                <i class="fa-solid fa-users"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value" id="stat-total-players">0</span>
+                <span class="stat-label">Players Online</span>
+              </div>
+            </div>
+            <div class="stat-card glass-card">
+              <div class="stat-icon icon-emerald">
+                <i class="fa-solid fa-circle-play"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value" id="stat-playing-rooms">0</span>
+                <span class="stat-label">In-Game Lobbies</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rooms Listing -->
+          <div class="panel-card glass-card mt-6">
+            <div class="card-header">
+              <h3>Active Matches</h3>
+              <button id="btn-refresh-rooms" class="btn btn-secondary btn-icon">
+                <i class="fa-solid fa-arrows-rotate"></i> Refresh
+              </button>
+            </div>
+            <div class="table-container">
+              <table id="table-rooms">
+                <thead>
+                  <tr>
+                    <th>Room Code</th>
+                    <th>Status</th>
+                    <th>Selected Level</th>
+                    <th>Players Joined</th>
+                    <th>Match Status</th>
+                  </tr>
+                </thead>
+                <tbody id="rooms-list-body">
+                  <tr>
+                    <td colspan="5" class="table-empty">
+                      <i class="fa-solid fa-circle-notch fa-spin table-empty-icon"></i>
+                      Loading active match data...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Levels Manager -->
+        <div id="tab-levels" class="tab-panel">
+          <div class="panel-header-actions">
+            <div class="panel-header">
+              <h2>Levels Manager</h2>
+              <p>Configure layouts, path sizes, and difficulties for singleplayer and multiplayer matches.</p>
+            </div>
+            <button id="btn-add-level" class="btn btn-emerald">
+              <i class="fa-solid fa-plus"></i> Add New Level
+            </button>
+          </div>
+
+          <div class="grid-layout">
+            <!-- Left: Levels Table -->
+            <div class="panel-card glass-card span-8">
+              <div class="card-header">
+                <h3>Levels List (<span id="levels-count">0</span>)</h3>
+                <div class="header-actions">
+                  <input type="file" id="input-upload-levels" accept=".json" style="display: none;">
+                  <button id="btn-upload-levels" class="btn btn-secondary btn-sm" title="Upload Levels JSON file" style="margin-right: 6px;">
+                    <i class="fa-solid fa-file-import"></i> Upload JSON
+                  </button>
+                  <button id="btn-backup-levels" class="btn btn-secondary btn-sm" title="Copy Levels JSON backup">
+                    <i class="fa-solid fa-copy"></i> Copy Backup
+                  </button>
+                </div>
+              </div>
+              <div class="table-container max-height-table">
+                <table id="table-levels">
+                  <thead>
+                    <tr>
+                      <th style="width: 80px;">ID</th>
+                      <th>Title</th>
+                      <th>Difficulty</th>
+                      <th>Grid Size</th>
+                      <th>Arrows</th>
+                      <th style="width: 150px; text-align: right;">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="levels-list-body">
+                    <tr>
+                      <td colspan="6" class="table-empty">
+                        <i class="fa-solid fa-circle-notch fa-spin table-empty-icon"></i>
+                        Fetching levels config...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Right: Level Edit Panel -->
+            <div class="panel-card glass-card span-4" id="level-editor-card" style="display: none;">
+              <div class="card-header">
+                <h3 id="editor-title">Edit Level</h3>
+                <button id="btn-close-editor" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <form id="form-level-editor">
+                <input type="hidden" id="edit-level-index">
+                
+                <div class="form-group">
+                  <label for="level-id">Level ID</label>
+                  <input type="number" id="level-id" required min="1">
+                </div>
+
+                <div class="form-group">
+                  <label for="level-title">Title</label>
+                  <input type="text" id="level-title" required placeholder="e.g. Level 20">
+                </div>
+
+                <div class="form-group">
+                  <label for="level-difficulty">Difficulty</label>
+                  <select id="level-difficulty" required>
+                    <option value="Beginner">Beginner</option>
+                    <option value="Easy">Easy</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Hard">Hard</option>
+                    <option value="Expert">Expert</option>
+                  </select>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group flex-1">
+                    <label for="grid-cols">Grid Columns</label>
+                    <input type="number" id="grid-cols" required min="3" max="25" value="10">
+                  </div>
+                  <div class="form-group flex-1">
+                    <label for="grid-rows">Grid Rows</label>
+                    <input type="number" id="grid-rows" required min="3" max="25" value="10">
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <div class="label-header">
+                    <label for="level-arrows-json">Arrows Definition (JSON)</label>
+                    <span class="label-hint" id="arrow-verify-badge">Valid JSON</span>
+                  </div>
+                  <textarea id="level-arrows-json" rows="12" class="code-textarea" required placeholder="[ { 'id': 'arrow_1', 'path': [...], 'fullPath': [...] } ]"></textarea>
+                  <small class="help-text">Contains coordinates list defining arrow segments.</small>
+                </div>
+
+                <div class="form-actions">
+                  <button type="button" id="btn-verify-level" class="btn btn-secondary flex-1">
+                    <i class="fa-solid fa-vial"></i> Test
+                  </button>
+                  <button type="submit" id="btn-save-level" class="btn btn-emerald flex-1">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Level
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Dynamic Music & Icons Config -->
+        <div id="tab-config" class="tab-panel">
+          <div class="panel-header">
+            <h2>Assets & Theme Configuration</h2>
+            <p>Customize background soundtracks, sound effects, and interface logos dynamically from the database.</p>
+          </div>
+
+          <div class="grid-layout">
+            <!-- Music URLs Card -->
+            <div class="panel-card glass-card span-7">
+              <div class="card-header">
+                <h3>Dynamic Audio Links</h3>
+                <i class="fa-solid fa-music header-icon icon-cyan"></i>
+              </div>
+              <form id="form-music-config">
+                <div class="form-group">
+                  <label for="cfg-bg-music">Background Music URL</label>
+                  <input type="url" id="cfg-bg-music" placeholder="https://example.com/audio/bg_music.mp3">
+                  <small class="help-text">Plays in continuous loop on menus/gameplay screens (MP3/WAV).</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="cfg-correct-sound">Correct Move Sound Effect URL</label>
+                  <input type="url" id="cfg-correct-sound" placeholder="https://example.com/audio/correct.wav">
+                  <small class="help-text">Triggered when tapping a free/valid arrow.</small>
+                </div>
+
+                <div class="form-group">
+                  <label for="cfg-wrong-sound">Wrong/Blocked Move Sound Effect URL</label>
+                  <input type="url" id="cfg-wrong-sound" placeholder="https://example.com/audio/wrong.wav">
+                  <small class="help-text">Triggered when tapping a blocked/locked arrow.</small>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group flex-1">
+                    <label for="cfg-victory-sound">Victory Sound URL</label>
+                    <input type="url" id="cfg-victory-sound" placeholder="https://example.com/audio/victory.mp3">
+                  </div>
+                  <div class="form-group flex-1">
+                    <label for="cfg-outofmove-sound">Out of Moves Sound URL</label>
+                    <input type="url" id="cfg-outofmove-sound" placeholder="https://example.com/audio/out_of_moves.mp3">
+                  </div>
+                </div>
+
+                <div class="form-actions mt-4">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-circle-check"></i> Save Audio Config
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Icon & Logo Config Card -->
+            <div class="panel-card glass-card span-5">
+              <div class="card-header">
+                <h3>Interface Styling & Icons</h3>
+                <i class="fa-solid fa-paint-brush header-icon icon-purple"></i>
+              </div>
+              <form id="form-icon-config">
+                <div class="form-group">
+                  <label for="cfg-home-arrow">Home Screen Logo / Icon URL</label>
+                  <input type="url" id="cfg-home-arrow" placeholder="e.g. https://example.com/logo.png">
+                  <small class="help-text">Direct URL to a PNG/JPG image to replace the Home Menu logo. Leave blank for default icon.png.</small>
+                </div>
+
+                <div class="icon-preview-box">
+                  <span class="preview-label">Live Preview on Menu</span>
+                  <div class="preview-display" id="preview-icon">
+                    <i class="fa-solid fa-gamepad" style="font-size: 38px; color: var(--color-cyan);"></i>
+                  </div>
+                </div>
+
+                <div class="form-actions mt-4">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-circle-check"></i> Save UI Config
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: Users Monitor -->
+        <div id="tab-users" class="tab-panel">
+          <div class="panel-header">
+            <h2>Users Device Registry</h2>
+            <p>Monitor registered player devices, view singleplayer progress, and manage administrative levels bypass access.</p>
+          </div>
+
+          <!-- Quick Stats Cards for Users -->
+          <div class="stats-row">
+            <div class="stat-card glass-card">
+              <div class="stat-icon icon-cyan">
+                <i class="fa-solid fa-mobile-screen-button"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value" id="stat-total-users">0</span>
+                <span class="stat-label">Total Registered Users</span>
+              </div>
+            </div>
+            <div class="stat-card glass-card">
+              <div class="stat-icon icon-emerald">
+                <i class="fa-solid fa-user-shield"></i>
+              </div>
+              <div class="stat-info">
+                <span class="stat-value" id="stat-unlocked-users">0</span>
+                <span class="stat-label">Admin Bypassed Users</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Users Table Listing -->
+          <div class="panel-card glass-card mt-6">
+            <div class="card-header">
+              <h3>Registered Devices</h3>
+              <button id="btn-refresh-users" class="btn btn-secondary btn-icon">
+                <i class="fa-solid fa-arrows-rotate"></i> Refresh
+              </button>
+            </div>
+            <div class="table-container">
+              <table id="table-users">
+                <thead>
+                  <tr>
+                    <th>System ID</th>
+                    <th>Player Name</th>
+                    <th>Platform OS</th>
+                    <th>OS Version</th>
+                    <th style="text-align: center;">Highest Level</th>
+                    <th style="text-align: center;">Admin Status</th>
+                    <th style="width: 200px; text-align: right;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="users-list-body">
+                  <tr>
+                    <td colspan="7" class="table-empty">
+                      <i class="fa-solid fa-circle-notch fa-spin table-empty-icon"></i>
+                      Loading user registry data...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- Levels Import & Organize Modal -->
+  <div id="modal-level-import" class="modal-overlay" style="display: none;">
+    <div class="modal-card glass-card">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-folder-open text-cyan"></i> Import & Organize Levels</h3>
+        <button id="btn-close-import-modal" class="btn-close"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        
+        <!-- File Info Stats -->
+        <div class="import-stats-box">
+          <div class="stat-item">
+            <span class="stat-label">Levels Found</span>
+            <span class="stat-value text-cyan" id="import-stat-found">0</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">ID Range</span>
+            <span class="stat-value text-purple" id="import-stat-range">N/A</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Validation</span>
+            <span class="stat-value text-emerald" id="import-stat-status">Valid</span>
+          </div>
+        </div>
+
+        <!-- Warnings / Verification Results -->
+        <div id="import-warnings-container" class="import-warnings-card" style="display: none;">
+          <h4><i class="fa-solid fa-triangle-exclamation text-amber"></i> Warnings & Issues</h4>
+          <ul id="import-warnings-list" class="warnings-list">
+            <!-- Dynamic warnings -->
+          </ul>
+        </div>
+
+        <form id="form-level-import">
+          <!-- Conflict Resolution Strategy -->
+          <div class="form-group mt-4">
+            <label class="section-label">Duplicate ID Conflict Strategy</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" name="import-strategy" value="skip" checked>
+                <div class="radio-custom-ui">
+                  <strong>Skip Duplicates (Safe)</strong>
+                  <p>Do NOT overwrite. Keep level data currently in DB if ID already exists.</p>
+                </div>
+              </label>
+              
+              <label class="radio-label">
+                <input type="radio" name="import-strategy" value="append">
+                <div class="radio-custom-ui">
+                  <strong>Append & Renumber (Safe)</strong>
+                  <p>Keep existing levels. Uploaded levels will get new auto-incremented IDs.</p>
+                </div>
+              </label>
+
+              <label class="radio-label">
+                <input type="radio" name="import-strategy" value="overwrite">
+                <div class="radio-custom-ui">
+                  <strong>Overwrite All (Destructive)</strong>
+                  <p>Wipe all existing levels and replace them with the uploaded ones.</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Organizer Checklist options -->
+          <div class="form-group mt-6">
+            <label class="section-label">Auto-Organization Options</label>
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="chk-import-sort" checked>
+                <span>Auto-Sort levels by ID (ascending)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="chk-import-autofill" checked>
+                <span>Auto-fill missing/empty titles (e.g. "Level 12")</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="chk-import-normalize" checked>
+                <span>Normalize difficulties (sentence casing & default to Expert)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="chk-import-strict-bounds" checked>
+                <span>Check arrow coordinates boundaries</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="form-actions mt-6">
+            <button type="button" id="btn-cancel-import" class="btn btn-secondary flex-1">
+              Cancel
+            </button>
+            <button type="submit" id="btn-execute-import" class="btn btn-primary flex-1">
+              <i class="fa-solid fa-circle-check"></i> Organize & Import
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Overlay -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
