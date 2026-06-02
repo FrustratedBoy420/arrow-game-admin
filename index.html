@@ -337,6 +337,34 @@
                 </div>
               </form>
             </div>
+
+            <!-- Version Config Card -->
+            <div class="panel-card glass-card span-12 mt-6">
+              <div class="card-header">
+                <h3>App Version Enforcement</h3>
+                <i class="fa-solid fa-code-branch header-icon icon-amber"></i>
+              </div>
+              <form id="form-version-config">
+                <div class="form-row">
+                  <div class="form-group flex-1">
+                    <label for="cfg-latest-version">Latest Version</label>
+                    <input type="text" id="cfg-latest-version" placeholder="e.g. 1.1.5" required pattern="^\d+\.\d+\.\d+$">
+                    <small class="help-text">The absolute latest released version of the app (e.g. 1.1.5).</small>
+                  </div>
+                  <div class="form-group flex-1">
+                    <label for="cfg-critical-version">Critical Version</label>
+                    <input type="text" id="cfg-critical-version" placeholder="e.g. 1.1.4" required pattern="^\d+\.\d+\.\d+$">
+                    <small class="help-text">Users with versions below this will be forced to update and blocked from playing (e.g. 1.1.4).</small>
+                  </div>
+                </div>
+
+                <div class="form-actions mt-4">
+                  <button type="submit" class="btn btn-primary">
+                    <i class="fa-solid fa-circle-check"></i> Save Version Config
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
 

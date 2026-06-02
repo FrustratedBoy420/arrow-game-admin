@@ -72,6 +72,11 @@ const cfgOutOfMoveSound = document.getElementById('cfg-outofmove-sound');
 const cfgHomeArrow = document.getElementById('cfg-home-arrow');
 const previewIcon = document.getElementById('preview-icon');
 
+// Version Config Elements
+const formVersionConfig = document.getElementById('form-version-config');
+const cfgLatestVersion = document.getElementById('cfg-latest-version');
+const cfgCriticalVersion = document.getElementById('cfg-critical-version');
+
 // Users Monitor Elements
 const statTotalUsers = document.getElementById('stat-total-users');
 const statUnlockedUsers = document.getElementById('stat-unlocked-users');
@@ -146,6 +151,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Asset configurations actions
   formMusicConfig.addEventListener('submit', saveMusicConfig);
   formIconConfig.addEventListener('submit', saveIconConfig);
+  if (formVersionConfig) {
+    formVersionConfig.addEventListener('submit', saveVersionConfig);
+  }
   cfgHomeArrow.addEventListener('input', (e) => {
     updateIconPreview(e.target.value);
   });
@@ -395,6 +403,10 @@ async function fetchConfigData() {
     const icons = data.icons || {};
     cfgHomeArrow.value = icons.homeArrow || '';
     updateIconPreview(icons.homeArrow || '');
+
+    const version = data.version || {};
+    if (cfgLatestVersion) cfgLatestVersion.value = version.latest || '1.0.0';
+    if (cfgCriticalVersion) cfgCriticalVersion.value = version.critical || '1.0.0';
 
   } catch (err) {
     console.error('Failed to get dynamic configs:', err);
@@ -694,6 +706,40 @@ async function saveIconConfig(e) {
     showToast('UI styling settings updated!', 'success');
   } catch (e) {
     showToast('Failed to save UI icons config.', 'error');
+  }
+}
+
+// Save Version Configurations
+async function saveVersionConfig(e) {
+  e.preventDefault();
+
+  const customVersion = {
+    latest: cfgLatestVersion.value.trim(),
+    critical: cfgCriticalVersion.value.trim()
+  };
+
+  showToast('Saving version configs...', 'info');
+
+  try {
+    const res = await fetch(`${serverUrl}/api/admin/update-config`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        type: 'version',
+        data: customVersion
+      })
+    });
+
+    if (res.status === 401) {
+      showToast('Unauthorized: check admin secret', 'error');
+      return;
+    }
+
+    if (!res.ok) throw new Error();
+
+    showToast('Version settings updated successfully!', 'success');
+  } catch (e) {
+    showToast('Failed to save version config.', 'error');
   }
 }
 
