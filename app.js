@@ -299,7 +299,7 @@ function renderRooms() {
       else if (room.status === 'playing') pStatusClass = 'playing';
       else if (p.ready) pStatusClass = 'ready';
 
-      const statusBadge = p.status === 'won' ? 'WON' : p.status === 'failed' ? 'FAILED' : room.status === 'playing' ? `${p.arrowsLeft} left` : p.ready ? 'READY' : 'LOBBY';
+      const statusBadge = p.status === 'won' ? 'WON' : p.status === 'failed' ? 'FAILED' : room.status === 'playing' ? `${p.score || 0} pts` : p.ready ? 'READY' : 'LOBBY';
 
       playersHtml += `
         <div class="player-item">
