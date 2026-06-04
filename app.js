@@ -314,33 +314,26 @@ function renderRooms() {
     });
     playersHtml += '</div>';
 
-    // Age and Expiry calculation
-    let ageAndExpiryHtml = '<span class="text-muted">N/A</span>';
+    // Expiry calculation
+    let expiryHtml = '<span class="text-muted">N/A</span>';
     if (room.createdAt) {
       const elapsedMs = Date.now() - room.createdAt;
       const remainingMs = Math.max(0, 3600000 - elapsedMs);
 
-      const elapsedMin = Math.floor(elapsedMs / 60000);
-      const elapsedSec = Math.floor((elapsedMs % 60000) / 1000);
-
       const remainingMin = Math.floor(remainingMs / 60000);
       const remainingSec = Math.floor((remainingMs % 60000) / 1000);
 
-      const ageStr = elapsedMin > 0 ? `${elapsedMin}m ${elapsedSec}s` : `${elapsedSec}s`;
-      const expiryStr = remainingMs > 0 ? `${remainingMin}m ${remainingSec}s` : '<span style="color: var(--color-rose); font-weight: 700;">Expired</span>';
-
-      ageAndExpiryHtml = `
-        <div style="font-size: 13px; line-height: 1.4;">
-          <div><span style="color: var(--text-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; margin-right: 4px;">Age:</span>${ageStr}</div>
-          <div><span style="color: var(--text-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; margin-right: 4px; color: var(--color-amber);">Expiry:</span>${expiryStr}</div>
-        </div>
-      `;
+      if (remainingMs > 0) {
+        expiryHtml = `<span style="font-size: 14px; font-weight: 600; color: var(--color-amber);">${remainingMin}m ${remainingSec}s</span>`;
+      } else {
+        expiryHtml = `<span class="badge badge-finished" style="background-color: rgba(244, 63, 94, 0.15); color: var(--color-rose); text-transform: uppercase; font-weight: 700;">Expired</span>`;
+      }
     }
 
     tr.innerHTML = `
       <td><strong>${room.code}</strong></td>
       <td><span class="badge ${statusClass}">${statusText}</span></td>
-      <td>${ageAndExpiryHtml}</td>
+      <td>${expiryHtml}</td>
       <td>L${room.level?.id || '?'} (${room.level?.difficulty || 'Expert'})</td>
       <td>${playersHtml}</td>
       <td>
@@ -387,7 +380,7 @@ async function closeRoom(roomCode) {
 // Active rooms polling intervals
 function startRoomsPolling() {
   stopRoomsPolling();
-  roomsInterval = setInterval(fetchActiveRooms, 5000);
+  roomsInterval = setInterval(fetchActiveRooms, 1000);
 }
 
 function stopRoomsPolling() {
