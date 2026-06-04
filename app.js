@@ -247,7 +247,7 @@ async function fetchActiveRooms() {
 
     if (res.status === 401) {
       showToast('Unauthorized: Check your Admin Secret token', 'error');
-      roomsListBody.innerHTML = `<tr><td colspan="5" class="table-empty text-rose"><i class="fa-solid fa-triangle-exclamation table-empty-icon"></i>Unauthorized admin secret!</td></tr>`;
+      roomsListBody.innerHTML = `<tr><td colspan="6" class="table-empty text-rose"><i class="fa-solid fa-triangle-exclamation table-empty-icon"></i>Unauthorized admin secret!</td></tr>`;
       return;
     }
 
@@ -258,7 +258,7 @@ async function fetchActiveRooms() {
     renderRooms();
   } catch (err) {
     console.error('Failed to get rooms list:', err);
-    roomsListBody.innerHTML = `<tr><td colspan="5" class="table-empty text-rose"><i class="fa-solid fa-circle-exclamation table-empty-icon"></i>Connection error. Click Refresh to retry.</td></tr>`;
+    roomsListBody.innerHTML = `<tr><td colspan="6" class="table-empty text-rose"><i class="fa-solid fa-circle-exclamation table-empty-icon"></i>Connection error. Click Refresh to retry.</td></tr>`;
   }
 }
 
@@ -270,7 +270,7 @@ function renderRooms() {
   let playingLobbies = 0;
 
   if (activeRooms.length === 0) {
-    roomsListBody.innerHTML = `<tr><td colspan="5" class="table-empty"><i class="fa-solid fa-gamepad table-empty-icon"></i>No active multiplayer lobbies right now.</td></tr>`;
+    roomsListBody.innerHTML = `<tr><td colspan="6" class="table-empty"><i class="fa-solid fa-gamepad table-empty-icon"></i>No active multiplayer lobbies right now.</td></tr>`;
     statActiveRooms.textContent = '0';
     statTotalPlayers.textContent = '0';
     statPlayingRooms.textContent = '0';
@@ -314,9 +314,33 @@ function renderRooms() {
     });
     playersHtml += '</div>';
 
+    // Age and Expiry calculation
+    let ageAndExpiryHtml = '<span class="text-muted">N/A</span>';
+    if (room.createdAt) {
+      const elapsedMs = Date.now() - room.createdAt;
+      const remainingMs = Math.max(0, 3600000 - elapsedMs);
+
+      const elapsedMin = Math.floor(elapsedMs / 60000);
+      const elapsedSec = Math.floor((elapsedMs % 60000) / 1000);
+
+      const remainingMin = Math.floor(remainingMs / 60000);
+      const remainingSec = Math.floor((remainingMs % 60000) / 1000);
+
+      const ageStr = elapsedMin > 0 ? `${elapsedMin}m ${elapsedSec}s` : `${elapsedSec}s`;
+      const expiryStr = remainingMs > 0 ? `${remainingMin}m ${remainingSec}s` : '<span style="color: var(--color-rose); font-weight: 700;">Expired</span>';
+
+      ageAndExpiryHtml = `
+        <div style="font-size: 13px; line-height: 1.4;">
+          <div><span style="color: var(--text-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; margin-right: 4px;">Age:</span>${ageStr}</div>
+          <div><span style="color: var(--text-muted); font-size: 11px; font-weight: 600; text-transform: uppercase; margin-right: 4px; color: var(--color-amber);">Expiry:</span>${expiryStr}</div>
+        </div>
+      `;
+    }
+
     tr.innerHTML = `
       <td><strong>${room.code}</strong></td>
       <td><span class="badge ${statusClass}">${statusText}</span></td>
+      <td>${ageAndExpiryHtml}</td>
       <td>L${room.level?.id || '?'} (${room.level?.difficulty || 'Expert'})</td>
       <td>${playersHtml}</td>
       <td>
