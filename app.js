@@ -77,6 +77,7 @@ const previewIcon = document.getElementById('preview-icon');
 const formVersionConfig = document.getElementById('form-version-config');
 const cfgLatestVersion = document.getElementById('cfg-latest-version');
 const cfgCriticalVersion = document.getElementById('cfg-critical-version');
+const cfgTermsUrl = document.getElementById('cfg-terms-url');
 
 // Users Monitor Elements
 const statTotalUsers = document.getElementById('stat-total-users');
@@ -429,6 +430,7 @@ async function fetchConfigData() {
     const version = data.version || {};
     if (cfgLatestVersion) cfgLatestVersion.value = version.latest || '1.0.0';
     if (cfgCriticalVersion) cfgCriticalVersion.value = version.critical || '1.0.0';
+    if (cfgTermsUrl) cfgTermsUrl.value = version.termsUrl || '';
 
   } catch (err) {
     console.error('Failed to get dynamic configs:', err);
@@ -803,7 +805,8 @@ async function saveVersionConfig(e) {
 
   const customVersion = {
     latest: cfgLatestVersion.value.trim(),
-    critical: cfgCriticalVersion.value.trim()
+    critical: cfgCriticalVersion.value.trim(),
+    termsUrl: cfgTermsUrl ? cfgTermsUrl.value.trim() : ''
   };
 
   showToast('Saving version configs...', 'info');
