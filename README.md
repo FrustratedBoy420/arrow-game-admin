@@ -8,8 +8,9 @@ This is a premium, web-based admin control panel for the Arrow Escape game. It a
 
 1. **Live Multiplayer Arena**:
    - Real-time display of currently online players and active rooms.
-   - Live status tracking (Lobby, Playing, Finished).
+   - Live status tracking (`Lobby`, `Playing`, `Finished`), supporting player specific failure tags (such as `'failed_lives'` for players who lost all 3 hearts).
    - Terminate active room keys directly in Redis.
+   - Server-side 1-hour expiration auto-cleanup of idle or long-running room sessions.
 2. **Levels Manager**:
    - Grid view showing IDs, grid columns/rows, difficulty ratings, and arrow counts.
    - Create, Edit, or Delete levels dynamically.

@@ -43,6 +43,7 @@ const editArrowsJson = document.getElementById('level-arrows-json');
 const arrowVerifyBadge = document.getElementById('arrow-verify-badge');
 const btnVerifyLevel = document.getElementById('btn-verify-level');
 const btnBackupLevels = document.getElementById('btn-backup-levels');
+const btnDownloadLevels = document.getElementById('btn-download-levels');
 
 // Import Levels Elements
 const btnUploadLevels = document.getElementById('btn-upload-levels');
@@ -140,6 +141,9 @@ document.addEventListener('DOMContentLoaded', () => {
   editArrowsJson.addEventListener('input', validateArrowsJson);
   btnVerifyLevel.addEventListener('click', verifyLevelManual);
   btnBackupLevels.addEventListener('click', copyLevelsBackup);
+  if (btnDownloadLevels) {
+    btnDownloadLevels.addEventListener('click', downloadLevelsJson);
+  }
   
   // Levels Import actions
   btnUploadLevels.addEventListener('click', () => inputUploadLevels.click());
@@ -390,6 +394,7 @@ async function fetchConfigData() {
     const data = await res.json();
 
     levels = data.levels || [];
+    renumberLevels();
     renderLevels();
 
     // Set configuration inputs
@@ -424,9 +429,6 @@ function renderLevels() {
     return;
   }
 
-  // Sort levels by ID
-  levels.sort((a, b) => a.id - b.id);
-
   levels.forEach((level, idx) => {
     const tr = document.createElement('tr');
     
@@ -442,6 +444,12 @@ function renderLevels() {
       <td>${level.gridSize?.columns || 10} × ${level.gridSize?.rows || 10}</td>
       <td>${level.arrows ? level.arrows.length : 0} arrows</td>
       <td style="text-align: right;">
+        <button class="btn btn-secondary btn-sm" onclick="moveLevelUp(${idx})" ${idx === 0 ? 'disabled' : ''} style="margin-right: 4px;" title="Move Up">
+          <i class="fa-solid fa-arrow-up"></i>
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="moveLevelDown(${idx})" ${idx === levels.length - 1 ? 'disabled' : ''} style="margin-right: 6px;" title="Move Down">
+          <i class="fa-solid fa-arrow-down"></i>
+        </button>
         <button class="btn btn-secondary btn-sm" onclick="editLevel(${idx})" style="margin-right: 6px;">
           <i class="fa-solid fa-pen-to-square"></i> Edit
         </button>
@@ -591,6 +599,7 @@ async function handleSaveLevel(e) {
     levels.push(levelObj);
   }
 
+  renumberLevels();
   await saveLevelsToDb();
   closeLevelEditor();
 }
@@ -600,6 +609,7 @@ async function deleteLevel(id) {
   if (!confirm(`Are you sure you want to permanently delete Level ${id}?`)) return;
 
   levels = levels.filter(l => l.id !== id);
+  renumberLevels();
   await saveLevelsToDb();
 }
 
@@ -638,6 +648,67 @@ function copyLevelsBackup() {
     .then(() => showToast('Levels JSON copied to clipboard!', 'success'))
     .catch(() => showToast('Failed to copy to clipboard', 'error'));
 }
+
+// Renumber levels sequentially
+function renumberLevels() {
+  levels.forEach((lvl, idx) => {
+    if (!lvl) return;
+    const newId = idx + 1;
+    const oldId = lvl.id;
+    // Check if level title is missing, or matches default "Level <number>"
+    const levelTitleRegex = /^Level\s*\d+$/i;
+    if (!lvl.title || lvl.title.trim() === '' || levelTitleRegex.test(lvl.title) || lvl.title === `Level ${oldId}`) {
+      lvl.title = `Level ${newId}`;
+    }
+    lvl.id = newId;
+  });
+}
+
+// Download levels JSON file
+function downloadLevelsJson() {
+  if (levels.length === 0) {
+    showToast('No levels to download.', 'warning');
+    return;
+  }
+  try {
+    const jsonStr = JSON.stringify(levels, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'levels.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('levels.json downloaded successfully!', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('Failed to download levels JSON.', 'error');
+  }
+}
+
+// Move Level Up
+window.moveLevelUp = async function(idx) {
+  if (idx <= 0 || idx >= levels.length) return;
+  const temp = levels[idx];
+  levels[idx] = levels[idx - 1];
+  levels[idx - 1] = temp;
+  
+  renumberLevels();
+  await saveLevelsToDb();
+};
+
+// Move Level Down
+window.moveLevelDown = async function(idx) {
+  if (idx < 0 || idx >= levels.length - 1) return;
+  const temp = levels[idx];
+  levels[idx] = levels[idx + 1];
+  levels[idx + 1] = temp;
+  
+  renumberLevels();
+  await saveLevelsToDb();
+};
 
 // Save Music Configurations
 async function saveMusicConfig(e) {
@@ -1081,6 +1152,7 @@ async function handleExecuteImport(e) {
 
   // Update global array
   levels = resultLevels;
+  renumberLevels();
 
   closeImportModal();
   
