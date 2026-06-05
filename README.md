@@ -1,6 +1,6 @@
-# Arrow Escape - Game Admin Dashboard
+# ArrowVerse-Multiplayer - Game Admin Dashboard
 
-This is a premium, web-based admin control panel for the Arrow Escape game. It allows you to monitor multiplayer lobbies, edit level designs, verify level assets, and customize soundtracks and logo icons dynamically.
+This is a premium, web-based admin control panel for the ArrowVerse-Multiplayer game. It allows you to monitor multiplayer lobbies, edit level designs, verify level assets, and customize soundtracks and logo icons dynamically.
 
 ---
 
