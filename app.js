@@ -15,6 +15,7 @@ const loginPage      = document.getElementById('login-page');
 const appContainer   = document.getElementById('app-container');
 const formLogin      = document.getElementById('form-login');
 const elLoginUrl     = document.getElementById('login-server-url');
+const elLoginServerField = document.getElementById('login-server-field');
 const elLoginUser    = document.getElementById('login-username');
 const elLoginPass    = document.getElementById('login-password');
 const btnLogin       = document.getElementById('btn-login');
@@ -122,18 +123,23 @@ function formatServerUrl(url) {
 // ==========================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Pre-fill login form with any saved credentials
-  const savedUrl      = localStorage.getItem('arrow_admin_url') || 'https://arrow-game-be.vercel.app';
+  // Fixed backend server URL (completely hidden from the login UI)
+  const defaultUrl = 'https://arrow-game-be.vercel.app';
+
+  // Ensure the server URL input is completely hidden in the UI
+  if (elLoginServerField) elLoginServerField.style.display = 'none';
+  elLoginUrl.type = 'hidden';
+
   const savedUsername = localStorage.getItem('arrow_admin_username') || '';
   const savedPassword = localStorage.getItem('arrow_admin_password') || '';
 
-  if (savedUrl)      elLoginUrl.value  = savedUrl;
+  if (defaultUrl)      elLoginUrl.value  = defaultUrl;
   if (savedUsername) elLoginUser.value = savedUsername;
   if (savedPassword) elLoginPass.value = savedPassword;
 
   // If all credentials are saved, attempt auto-login silently
-  if (savedUrl && savedUsername && savedPassword) {
-    attemptLogin(savedUrl, savedUsername, savedPassword, true);
+  if (defaultUrl && savedUsername && savedPassword) {
+    attemptLogin(defaultUrl, savedUsername, savedPassword, true);
   }
 
   // Login form submit
@@ -246,7 +252,7 @@ async function attemptLogin(url, user, pass, silent) {
 
 function onLoginSuccess() {
   // Update navbar session labels
-  sessionServerText.textContent = serverUrl.replace(/^https?:\/\//, '');
+  sessionServerText.textContent = 'Online';
   sessionUserText.textContent   = adminUsername;
 
   // Animate login page out, show app
@@ -284,6 +290,8 @@ function logout() {
   updateStatusIndicator(false);
 
   // Reset login form
+  if (elLoginServerField) elLoginServerField.style.display = 'none';
+  elLoginUrl.type = 'hidden';
   elLoginUrl.value = 'https://arrow-game-be.vercel.app';
   elLoginUser.value = '';
   elLoginPass.value = '';
