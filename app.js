@@ -123,7 +123,7 @@ function formatServerUrl(url) {
 
 document.addEventListener('DOMContentLoaded', () => {
   // Pre-fill login form with any saved credentials
-  const savedUrl      = localStorage.getItem('arrow_admin_url') || '';
+  const savedUrl      = localStorage.getItem('arrow_admin_url') || 'https://arrow-game-be.vercel.app';
   const savedUsername = localStorage.getItem('arrow_admin_username') || '';
   const savedPassword = localStorage.getItem('arrow_admin_password') || '';
 
@@ -139,7 +139,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Login form submit
   formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const url  = formatServerUrl(elLoginUrl.value.trim() || 'http://localhost:3000');
+    const url  = formatServerUrl(elLoginUrl.value.trim() || 'https://arrow-game-be.vercel.app');
     const user = elLoginUser.value.trim();
     const pass = elLoginPass.value;
     if (!user || !pass) return;
@@ -267,24 +267,39 @@ function onLoginSuccess() {
 }
 
 function logout() {
-  // Stop polling
+  // Stop all polling
   stopRoomsPolling();
   stopUsersPolling();
+
+  // Clear in-memory state
   isLoggedIn = false;
+  serverUrl = '';
+  adminUsername = '';
+  adminPassword = '';
+
+  // Clear saved credentials from localStorage so auto-login doesn't re-trigger
+  clearSession();
+
+  // Update status indicator
   updateStatusIndicator(false);
 
-  // Show login page again
-  appContainer.style.display = 'none';
-  loginPage.classList.remove('hiding');
-  loginPage.style.display = 'flex';
+  // Reset login form
+  elLoginUrl.value = 'https://arrow-game-be.vercel.app';
+  elLoginUser.value = '';
+  elLoginPass.value = '';
+  elLoginPass.type = 'password';
+  togglePwIcon.className = 'fa-solid fa-eye';
   hideLoginError();
 
-  // Pre-fill username only (not password)
-  elLoginUser.value = adminUsername;
-  elLoginPass.value = '';
+  // Hide dashboard, show login page
+  appContainer.style.display = 'none';
+  loginPage.classList.remove('hiding');
+  loginPage.style.removeProperty('display'); // clear any inline display:none
+  loginPage.style.display = 'flex';
 
   showToast('Logged out successfully', 'info');
 }
+
 
 function clearSession() {
   localStorage.removeItem('arrow_admin_url');

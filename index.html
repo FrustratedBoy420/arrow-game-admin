@@ -31,9 +31,9 @@
 
       <!-- Login Form -->
       <form id="form-login" class="login-form" autocomplete="on">
-        <div class="login-field">
+        <div class="login-field" style="display: none;">
           <label for="login-server-url"><i class="fa-solid fa-server"></i> Server URL</label>
-          <input type="text" id="login-server-url" placeholder="https://your-backend.vercel.app" autocomplete="url">
+          <input type="hidden" id="login-server-url" value="https://arrow-game-be.vercel.app" autocomplete="url">
         </div>
         <div class="login-field">
           <label for="login-username"><i class="fa-solid fa-user-shield"></i> Admin ID</label>
@@ -408,7 +408,7 @@
                 <div class="form-row mt-4">
                   <div class="form-group flex-1">
                     <label for="cfg-terms-url">Terms & Conditions URL</label>
-                    <input type="url" id="cfg-terms-url" placeholder="e.g. https://arrow-game-backend.vercel.app/terms-and-conditions">
+                    <input type="url" id="cfg-terms-url" placeholder="e.g. https://arrow-game-be.vercel.app/terms-and-conditions">
                     <small class="help-text">Dynamic link to detailed Terms and Conditions used in client screens.</small>
                   </div>
                 </div>
