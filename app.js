@@ -1,6 +1,8 @@
 // State variables
 let serverUrl = '';
-let adminSecret = '';
+let adminUsername = '';
+let adminPassword = '';
+let isLoggedIn = false;
 let levels = [];
 let activeRooms = [];
 let roomsInterval = null;
@@ -8,10 +10,26 @@ let usersInterval = null;
 let currentTab = 'tab-dashboard';
 let uploadedLevelsToImport = [];
 
-// DOM Elements
-const elServerUrl = document.getElementById('server-url');
-const elAdminSecret = document.getElementById('admin-secret');
-const btnSaveCredentials = document.getElementById('btn-save-credentials');
+// DOM Elements — Login Page
+const loginPage      = document.getElementById('login-page');
+const appContainer   = document.getElementById('app-container');
+const formLogin      = document.getElementById('form-login');
+const elLoginUrl     = document.getElementById('login-server-url');
+const elLoginUser    = document.getElementById('login-username');
+const elLoginPass    = document.getElementById('login-password');
+const btnLogin       = document.getElementById('btn-login');
+const loginError     = document.getElementById('login-error');
+const loginErrorText = document.getElementById('login-error-text');
+const btnTogglePw    = document.getElementById('btn-toggle-password');
+const togglePwIcon   = document.getElementById('toggle-pw-icon');
+
+// DOM Elements — Navbar Session
+const btnLogout          = document.getElementById('btn-logout');
+const sessionServerText  = document.getElementById('session-server-text');
+const sessionUserText    = document.getElementById('session-user-text');
+
+// DOM Elements — Dashboard
+
 const statusIndicator = document.getElementById('status-indicator');
 const statusText = document.getElementById('status-text');
 
@@ -99,16 +117,48 @@ function formatServerUrl(url) {
   return cleaned;
 }
 
-// Init application
+// ==========================================================================
+// LOGIN GATE — All initialization runs through here
+// ==========================================================================
+
 document.addEventListener('DOMContentLoaded', () => {
-  // Load saved configurations
-  serverUrl = formatServerUrl(localStorage.getItem('arrow_admin_url') || 'http://localhost:3000');
-  adminSecret = localStorage.getItem('arrow_admin_secret') || '';
+  // Pre-fill login form with any saved credentials
+  const savedUrl      = localStorage.getItem('arrow_admin_url') || '';
+  const savedUsername = localStorage.getItem('arrow_admin_username') || '';
+  const savedPassword = localStorage.getItem('arrow_admin_password') || '';
 
-  elServerUrl.value = serverUrl;
-  elAdminSecret.value = adminSecret;
+  if (savedUrl)      elLoginUrl.value  = savedUrl;
+  if (savedUsername) elLoginUser.value = savedUsername;
+  if (savedPassword) elLoginPass.value = savedPassword;
 
-  // Setup tab routing
+  // If all credentials are saved, attempt auto-login silently
+  if (savedUrl && savedUsername && savedPassword) {
+    attemptLogin(savedUrl, savedUsername, savedPassword, true);
+  }
+
+  // Login form submit
+  formLogin.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const url  = formatServerUrl(elLoginUrl.value.trim() || 'http://localhost:3000');
+    const user = elLoginUser.value.trim();
+    const pass = elLoginPass.value;
+    if (!user || !pass) return;
+    await attemptLogin(url, user, pass, false);
+  });
+
+  // Password show/hide toggle
+  btnTogglePw.addEventListener('click', () => {
+    const isHidden = elLoginPass.type === 'password';
+    elLoginPass.type = isHidden ? 'text' : 'password';
+    togglePwIcon.className = isHidden ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+  });
+
+  // Logout button
+  btnLogout.addEventListener('click', () => {
+    logout();
+  });
+
+  // Tab routing
   navItems.forEach(item => {
     item.addEventListener('click', (e) => {
       const targetTab = e.currentTarget.getAttribute('data-tab');
@@ -116,24 +166,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Connection config actions
-  btnSaveCredentials.addEventListener('click', () => {
-    serverUrl = formatServerUrl(elServerUrl.value);
-    elServerUrl.value = serverUrl; // Display formatted URL in input
-    adminSecret = elAdminSecret.value.trim();
-    localStorage.setItem('arrow_admin_url', serverUrl);
-    localStorage.setItem('arrow_admin_secret', adminSecret);
-    showToast('Credentials updated. Connecting...', 'info');
-    testConnection();
-  });
-
-  // Refresh active rooms button
+  // Refresh buttons
   btnRefreshRooms.addEventListener('click', fetchActiveRooms);
-
-  // Refresh registered users button
-  if (btnRefreshUsers) {
-    btnRefreshUsers.addEventListener('click', fetchRegisteredUsers);
-  }
+  if (btnRefreshUsers) btnRefreshUsers.addEventListener('click', fetchRegisteredUsers);
 
   // Levels actions
   btnAddLevel.addEventListener('click', openAddLevelModal);
@@ -142,30 +177,137 @@ document.addEventListener('DOMContentLoaded', () => {
   editArrowsJson.addEventListener('input', validateArrowsJson);
   btnVerifyLevel.addEventListener('click', verifyLevelManual);
   btnBackupLevels.addEventListener('click', copyLevelsBackup);
-  if (btnDownloadLevels) {
-    btnDownloadLevels.addEventListener('click', downloadLevelsJson);
-  }
-  
-  // Levels Import actions
+  if (btnDownloadLevels) btnDownloadLevels.addEventListener('click', downloadLevelsJson);
+
+  // Levels Import
   btnUploadLevels.addEventListener('click', () => inputUploadLevels.click());
   inputUploadLevels.addEventListener('change', handleUploadLevelsFile);
   btnCloseImportModal.addEventListener('click', closeImportModal);
   btnCancelImport.addEventListener('click', closeImportModal);
   formLevelImport.addEventListener('submit', handleExecuteImport);
 
-  // Asset configurations actions
+  // Asset config
   formMusicConfig.addEventListener('submit', saveMusicConfig);
   formIconConfig.addEventListener('submit', saveIconConfig);
-  if (formVersionConfig) {
-    formVersionConfig.addEventListener('submit', saveVersionConfig);
-  }
-  cfgHomeArrow.addEventListener('input', (e) => {
-    updateIconPreview(e.target.value);
-  });
-
-  // Initial connect test
-  testConnection();
+  if (formVersionConfig) formVersionConfig.addEventListener('submit', saveVersionConfig);
+  cfgHomeArrow.addEventListener('input', (e) => updateIconPreview(e.target.value));
 });
+
+// Attempt login — silent=true means no error toast on fail (used for auto-restore)
+async function attemptLogin(url, user, pass, silent) {
+  setLoginLoading(true);
+  hideLoginError();
+
+  const formattedUrl = formatServerUrl(url);
+
+  try {
+    const res = await fetch(`${formattedUrl}/api/admin/rooms`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-admin-username': user,
+        'x-admin-password': pass
+      }
+    });
+
+    if (res.status === 401) {
+      if (!silent) showLoginError('Invalid Admin ID or Password. Please try again.');
+      setLoginLoading(false);
+      return;
+    }
+
+    if (!res.ok) {
+      if (!silent) showLoginError('Server error. Check your Server URL and try again.');
+      setLoginLoading(false);
+      return;
+    }
+
+    // ✅ Login success
+    serverUrl    = formattedUrl;
+    adminUsername = user;
+    adminPassword = pass;
+    isLoggedIn   = true;
+
+    localStorage.setItem('arrow_admin_url', serverUrl);
+    localStorage.setItem('arrow_admin_username', adminUsername);
+    localStorage.setItem('arrow_admin_password', adminPassword);
+
+    onLoginSuccess();
+
+  } catch (err) {
+    if (!silent) showLoginError('Cannot reach server. Verify the Server URL.');
+    else {
+      // Auto-restore failed silently — just clear session so user can log in manually
+      clearSession();
+    }
+    setLoginLoading(false);
+  }
+}
+
+function onLoginSuccess() {
+  // Update navbar session labels
+  sessionServerText.textContent = serverUrl.replace(/^https?:\/\//, '');
+  sessionUserText.textContent   = adminUsername;
+
+  // Animate login page out, show app
+  loginPage.classList.add('hiding');
+  setTimeout(() => {
+    loginPage.style.display = 'none';
+    appContainer.style.display = 'flex';
+    appContainer.style.flexDirection = 'column';
+
+    // Mark sidebar as connected
+    updateStatusIndicator(true);
+
+    // Start dashboard
+    switchTab('tab-dashboard');
+    fetchActiveRooms();
+    startRoomsPolling();
+  }, 380);
+}
+
+function logout() {
+  // Stop polling
+  stopRoomsPolling();
+  stopUsersPolling();
+  isLoggedIn = false;
+  updateStatusIndicator(false);
+
+  // Show login page again
+  appContainer.style.display = 'none';
+  loginPage.classList.remove('hiding');
+  loginPage.style.display = 'flex';
+  hideLoginError();
+
+  // Pre-fill username only (not password)
+  elLoginUser.value = adminUsername;
+  elLoginPass.value = '';
+
+  showToast('Logged out successfully', 'info');
+}
+
+function clearSession() {
+  localStorage.removeItem('arrow_admin_url');
+  localStorage.removeItem('arrow_admin_username');
+  localStorage.removeItem('arrow_admin_password');
+}
+
+function setLoginLoading(loading) {
+  btnLogin.disabled = loading;
+  btnLogin.innerHTML = loading
+    ? '<i class="fa-solid fa-circle-notch spin"></i> Signing In...'
+    : '<i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In';
+}
+
+function showLoginError(msg) {
+  loginErrorText.textContent = msg;
+  loginError.style.display = 'flex';
+}
+
+function hideLoginError() {
+  loginError.style.display = 'none';
+}
+
 
 // Switch Dashboard Tabs
 function switchTab(tabId) {
@@ -204,39 +346,21 @@ function switchTab(tabId) {
 // Global Headers Helper
 function getHeaders() {
   const headers = { 'Content-Type': 'application/json' };
-  if (adminSecret) {
-    headers['x-admin-secret'] = adminSecret;
+  if (adminUsername) {
+    headers['x-admin-username'] = adminUsername;
+  }
+  if (adminPassword) {
+    headers['x-admin-password'] = adminPassword;
   }
   return headers;
 }
 
-// Test connectivity to the Backend API
-async function testConnection() {
-  statusText.textContent = 'Testing connection...';
-  statusIndicator.className = 'status-indicator offline';
-  stopRoomsPolling();
-
-  try {
-    const res = await fetch(`${serverUrl}/api/health`);
-    if (res.ok) {
-      statusIndicator.className = 'status-indicator online';
-      statusText.textContent = 'Connected (API OK)';
-      showToast('Connection verified successfully!', 'success');
-      
-      // Start polling rooms if dashboard tab is open
-      if (currentTab === 'tab-dashboard') {
-        fetchActiveRooms();
-        startRoomsPolling();
-      }
-    } else {
-      throw new Error();
-    }
-  } catch (err) {
-    statusIndicator.className = 'status-indicator offline';
-    statusText.textContent = 'Offline (Server Error)';
-    showToast('Failed to connect to API server. Verify Server URL.', 'error');
-  }
+// Update sidebar connection status indicator (called after login)
+function updateStatusIndicator(online) {
+  statusIndicator.className = `status-indicator ${online ? 'online' : 'offline'}`;
+  statusText.textContent = online ? 'Connected' : 'Disconnected';
 }
+
 
 // Fetch active rooms & players list (polling dashboard)
 async function fetchActiveRooms() {
@@ -247,8 +371,8 @@ async function fetchActiveRooms() {
     });
 
     if (res.status === 401) {
-      showToast('Unauthorized: Check your Admin Secret token', 'error');
-      roomsListBody.innerHTML = `<tr><td colspan="6" class="table-empty text-rose"><i class="fa-solid fa-triangle-exclamation table-empty-icon"></i>Unauthorized admin secret!</td></tr>`;
+      showToast('Unauthorized: Check your Admin ID and Password', 'error');
+      roomsListBody.innerHTML = `<tr><td colspan="6" class="table-empty text-rose"><i class="fa-solid fa-triangle-exclamation table-empty-icon"></i>Invalid Admin ID or Password!</td></tr>`;
       return;
     }
 
@@ -647,7 +771,7 @@ async function saveLevelsToDb() {
     });
 
     if (res.status === 401) {
-      showToast('Unauthorized: check your admin secret', 'error');
+      showToast('Unauthorized: Check your Admin ID and Password', 'error');
       return;
     }
 
@@ -754,7 +878,7 @@ async function saveMusicConfig(e) {
     });
 
     if (res.status === 401) {
-      showToast('Unauthorized: check admin secret', 'error');
+      showToast('Unauthorized: Check your Admin ID and Password', 'error');
       return;
     }
 
@@ -822,7 +946,7 @@ async function saveVersionConfig(e) {
     });
 
     if (res.status === 401) {
-      showToast('Unauthorized: check admin secret', 'error');
+      showToast('Unauthorized: Check your Admin ID and Password', 'error');
       return;
     }
 
@@ -1207,8 +1331,8 @@ async function fetchRegisteredUsers() {
     });
 
     if (res.status === 401) {
-      showToast('Unauthorized: Check your Admin Secret token', 'error');
-      usersListBody.innerHTML = `<tr><td colspan="8" class="table-empty text-rose"><i class="fa-solid fa-triangle-exclamation table-empty-icon"></i>Unauthorized admin secret!</td></tr>`;
+      showToast('Unauthorized: Check your Admin ID and Password', 'error');
+      usersListBody.innerHTML = `<tr><td colspan="8" class="table-empty text-rose"><i class="fa-solid fa-triangle-exclamation table-empty-icon"></i>Invalid Admin ID or Password!</td></tr>`;
       return;
     }
 
