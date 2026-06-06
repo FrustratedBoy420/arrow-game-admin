@@ -1208,7 +1208,7 @@ async function fetchRegisteredUsers() {
 
     if (res.status === 401) {
       showToast('Unauthorized: Check your Admin Secret token', 'error');
-      usersListBody.innerHTML = `<tr><td colspan="7" class="table-empty text-rose"><i class="fa-solid fa-triangle-exclamation table-empty-icon"></i>Unauthorized admin secret!</td></tr>`;
+      usersListBody.innerHTML = `<tr><td colspan="8" class="table-empty text-rose"><i class="fa-solid fa-triangle-exclamation table-empty-icon"></i>Unauthorized admin secret!</td></tr>`;
       return;
     }
 
@@ -1219,7 +1219,7 @@ async function fetchRegisteredUsers() {
     renderUsers(users);
   } catch (err) {
     console.error('Failed to get registered users list:', err);
-    usersListBody.innerHTML = `<tr><td colspan="7" class="table-empty text-rose"><i class="fa-solid fa-circle-exclamation table-empty-icon"></i>Connection error. Click Refresh to retry.</td></tr>`;
+    usersListBody.innerHTML = `<tr><td colspan="8" class="table-empty text-rose"><i class="fa-solid fa-circle-exclamation table-empty-icon"></i>Connection error. Click Refresh to retry.</td></tr>`;
   }
 }
 
@@ -1232,7 +1232,7 @@ function renderUsers(users) {
   let unlockedUsers = 0;
 
   if (totalUsers === 0) {
-    usersListBody.innerHTML = `<tr><td colspan="7" class="table-empty"><i class="fa-solid fa-mobile-screen-button table-empty-icon"></i>No registered devices found.</td></tr>`;
+    usersListBody.innerHTML = `<tr><td colspan="8" class="table-empty"><i class="fa-solid fa-mobile-screen-button table-empty-icon"></i>No registered devices found.</td></tr>`;
     if (statTotalUsers) statTotalUsers.textContent = '0';
     if (statUnlockedUsers) statUnlockedUsers.textContent = '0';
     return;
@@ -1277,6 +1277,7 @@ function renderUsers(users) {
       <td><strong>${user.name || 'Guest'}</strong></td>
       <td>${osIcon} <span style="margin-left: 6px;">${user.os}</span></td>
       <td>${user.osVersion || 'N/A'}</td>
+      <td><code>${user.ip || 'N/A'}</code></td>
       <td style="text-align: center;"><span class="badge badge-medium">Level ${user.highestUnlockedLevel || 1}</span></td>
       <td style="text-align: center;"><span class="badge ${statusClass}">${statusText}</span></td>
       <td style="text-align: right;">
